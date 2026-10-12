@@ -256,6 +256,8 @@ class ModelMetadataExtractor:
             "path",
             "format",
             "file_size",
+            "error",
+            "extraction_error",
             "suspicious_patterns",
             "security_flags",
             "custom_operators",

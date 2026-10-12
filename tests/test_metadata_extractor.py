@@ -1341,3 +1341,54 @@ class TestCLIMetadataCommand:
 
         assert result.exit_code == 0
         assert "Format: safetensors" in result.output
+
+
+@pytest.mark.parametrize("security_only", [False, True])
+@pytest.mark.parametrize("directory", [False, True])
+def test_metadata_extraction_errors_survive_security_filter(
+    tmp_path: Path,
+    security_only: bool,
+    directory: bool,
+) -> None:
+    target = tmp_path / "truncated.safetensors"
+    target.write_bytes(struct.pack("<Q", 64) + b"{}")
+    extractor = metadata_extractor_module.ModelMetadataExtractor()
+    result = extractor.extract(str(tmp_path if directory else target), security_only=security_only)
+    metadata = result["files"][0] if directory else result
+
+    assert metadata["format"] == "safetensors"
+    assert metadata["file"] == target.name
+    assert metadata["path"] == str(target)
+    assert metadata["extraction_error"] == "Invalid SafeTensors header length: 64"
+
+
+@pytest.mark.parametrize("security_only", [False, True])
+@pytest.mark.parametrize("directory", [False, True])
+@pytest.mark.parametrize("output_format", ["json", "table"])
+def test_cli_metadata_displays_extraction_errors(
+    tmp_path: Path,
+    security_only: bool,
+    directory: bool,
+    output_format: str,
+) -> None:
+    from click.testing import CliRunner
+
+    from modelaudit.cli import cli
+
+    target = tmp_path / "truncated.safetensors"
+    target.write_bytes(struct.pack("<Q", 64) + b"{}")
+    arguments = ["metadata", str(tmp_path if directory else target), "--format", output_format]
+    if security_only:
+        arguments.append("--security-only")
+
+    result = CliRunner().invoke(cli, arguments)
+
+    assert result.exit_code == 0, result.output
+    assert "Invalid SafeTensors header length: 64" in result.output
+    if output_format == "json":
+        metadata = json.loads(result.output)
+        if directory:
+            metadata = metadata["files"][0]
+        assert metadata["extraction_error"] == "Invalid SafeTensors header length: 64"
+    elif directory:
+        assert "truncated.safetensors (error: Invalid SafeTensors header length: 64)" in result.output
