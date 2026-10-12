@@ -5627,7 +5627,7 @@ def metadata(path: str, output_format: str, output: str | None, security_only: b
 
                 output_text = yaml.dump(metadata, default_flow_style=False, sort_keys=False)
             except ImportError:
-                click.secho("Warning: PyYAML not installed, falling back to JSON", fg="yellow")
+                click.secho("Warning: PyYAML not installed, falling back to JSON", fg="yellow", err=True)
                 output_text = json.dumps(metadata, indent=2)
         else:  # table format
             output_text = _format_metadata_table(metadata)

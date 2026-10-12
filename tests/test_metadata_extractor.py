@@ -5,6 +5,7 @@ import os
 import pickle
 import pickletools
 import struct
+import sys
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -31,6 +32,34 @@ def test_has_tensorflow_protobuf_stubs_fails_closed_on_probe_error(monkeypatch: 
 
     assert tensorflow_compat.has_tensorflow_protobuf_stubs() is False
     assert tensorflow_compat._HAS_PROTOBUF_STUBS is False
+
+
+@pytest.mark.parametrize("output_file", [False, True])
+def test_cli_metadata_yaml_fallback_keeps_json_output_parseable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    output_file: bool,
+) -> None:
+    from click.testing import CliRunner
+
+    from modelaudit.cli import cli
+
+    target = tmp_path / "empty.safetensors"
+    target.write_bytes(struct.pack("<Q", 2) + b"{}")
+    monkeypatch.setitem(sys.modules, "yaml", None)
+    arguments = ["metadata", str(target), "--format", "yaml"]
+    output_path = tmp_path / "metadata.json"
+    if output_file:
+        arguments.extend(["--output", str(output_path)])
+
+    result = CliRunner().invoke(cli, arguments)
+
+    assert result.exit_code == 0, result.output
+    assert "PyYAML not installed, falling back to JSON" in result.stderr
+    assert "Warning:" not in result.stdout
+    metadata = json.loads(output_path.read_text() if output_file else result.stdout)
+    assert metadata["file"] == target.name
+    assert metadata["format"] == "safetensors"
 
 
 class TestModelMetadataExtractor:
