@@ -258,6 +258,7 @@ class ModelMetadataExtractor:
             "file_size",
             "error",
             "extraction_error",
+            "error_reading_metadata",
             "suspicious_patterns",
             "security_flags",
             "custom_operators",

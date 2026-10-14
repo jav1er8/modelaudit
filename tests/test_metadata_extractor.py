@@ -1245,3 +1245,40 @@ def test_cli_metadata_displays_extraction_errors(
         assert metadata["extraction_error"] == "Invalid SafeTensors header length: 64"
     elif directory:
         assert "truncated.safetensors (error: Invalid SafeTensors header length: 64)" in result.output
+
+
+@pytest.mark.parametrize("security_only", [False, True])
+@pytest.mark.parametrize("directory", [False, True])
+@pytest.mark.parametrize("output_format", ["json", "table"])
+def test_cli_metadata_displays_gguf_read_errors(
+    tmp_path: Path,
+    security_only: bool,
+    directory: bool,
+    output_format: str,
+) -> None:
+    from click.testing import CliRunner
+
+    from modelaudit.cli import cli
+    from tests.helpers import create_mock_gguf
+
+    target = create_mock_gguf(tmp_path / "bounded.gguf")
+    payload = bytearray(target.read_bytes())
+    struct.pack_into("<Q", payload, 16, 100_001)
+    target.write_bytes(payload)
+    message = "File declares 100001 metadata keys, exceeding limit 100000"
+    arguments = ["metadata", str(tmp_path if directory else target), "--format", output_format]
+    if security_only:
+        arguments.append("--security-only")
+
+    result = CliRunner().invoke(cli, arguments)
+
+    assert result.exit_code == 0, result.output
+    assert message in result.output
+    if output_format == "json":
+        metadata = json.loads(result.output)
+        if directory:
+            metadata = metadata["files"][0]
+        assert metadata["error_reading_metadata"] == message
+        assert metadata["format"] == "gguf"
+    elif directory:
+        assert f"bounded.gguf (error: {message})" in result.output
