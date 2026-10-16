@@ -27,9 +27,6 @@ modelaudit metadata model.onnx --format yaml
 modelaudit metadata model.onnx --security-only
 ```
 
-If PyYAML is unavailable, `--format yaml` falls back to JSON and prints a warning to stderr.
-The metadata on stdout or in `--output` remains valid JSON for automation.
-
 ## Directory limits
 
 Directory tables show the first 10 file entries by default. Use `--table-limit` to show fewer

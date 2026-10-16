@@ -138,6 +138,7 @@ def test_cli_metadata_yaml_fallback_keeps_json_output_parseable(
 
     target = tmp_path / "empty.safetensors"
     target.write_bytes(struct.pack("<Q", 2) + b"{}")
+    # Exercise the command-level fallback; PyYAML is required for normal CLI startup.
     monkeypatch.setitem(sys.modules, "yaml", None)
     arguments = ["metadata", str(target), "--format", "yaml"]
     output_path = tmp_path / "metadata.json"
