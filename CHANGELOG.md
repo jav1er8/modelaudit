@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add `metadata --table-limit` to control the number of file entries displayed in directory tables.
+
 ### Fixed
 
 - Preserve metadata extraction errors with `--security-only` and display them in directory table output.
