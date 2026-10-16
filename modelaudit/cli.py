@@ -5523,7 +5523,9 @@ def _format_metadata_table(metadata: dict[str, Any]) -> str:
         output.append("\nFiles:")
         for file_meta in metadata["files"][:10]:  # Show first 10 files
             file_name = _escape_terminal_text(file_meta.get("file", "unknown"))
-            if error := file_meta.get("error"):
+            if error := (
+                file_meta.get("error") or file_meta.get("extraction_error") or file_meta.get("error_reading_metadata")
+            ):
                 output.append(f"  {file_name} (error: {_escape_terminal_text(error)})")
             else:
                 file_format = _escape_terminal_text(file_meta.get("format", "unknown"))
